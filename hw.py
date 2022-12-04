@@ -7,9 +7,13 @@ from PIL import Image
 
 IMAGE_PATH = 'texture.png'
 
+# solution for no np.float128/np.complex256 error on windows
+np.float128 = np.longdouble
+np.complex256 = np.clongdouble
+
 def load_textures(path = IMAGE_PATH):
     img = Image.open(path)
-    w, h = img.width, img.height
+    w, h = img.size
 
     # load texture images
     earth = img.crop((0, h/2, w/4, 3*h/4))
@@ -19,39 +23,53 @@ def load_textures(path = IMAGE_PATH):
     grass = img.crop((w/4, 3*h/4, w/2, h))
     brick = img.crop((w/2, 3*h/4, 3*w/4, h))
 
+    img.close()
+
     # TODO create textures, mb need to create separate classes
+    imgs = [earth, sand, stone, earth_wg, grass, brick]
+    textures = []
+    for i in imgs:  
+        textData = i.tobytes("raw", "RGBA", 0, -1)
+        # textData = np.array(list(i.getdata()))
+        textID = glGenTextures(1)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glBindTexture(GL_TEXTURE_2D, textID)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, textData)
+        textures.append(textID)
 
-
+    return textures
 
 
 class Block:
     def __init__(self):
-        pass
+        self.textures = load_textures()
 
     def draw(self):
-        pass
+        verts = ((1, 1), (1,-1), (-1,-1), (-1,1))
+        texts = ((1, 0), (1, 1), (0, 1), (0, 0))
+        surf = (0, 1, 2, 3)
+
+        glEnable(GL_TEXTURE_2D)
+        glBindTexture(GL_TEXTURE_2D, self.textures[0])
+
+        glBegin(GL_QUADS)
+        for i in surf:
+            glTexCoord2f(texts[i][0], texts[i][1])
+            glVertex2f(verts[i][0], verts[i][1])
+        glEnd()
+        
+        glDisable(GL_TEXTURE_2D)
 
 
 class Viewer:
     def __init__(self):
         pass
-
-    # NOTE: I think it is not even needed
-    # def light(self):
-    #     glEnable(GL_COLOR_MATERIAL)
-    #     glEnable(GL_LIGHTING)
-    #     glEnable(GL_DEPTH_TEST)
-
-    #     # feel free to adjust light colors
-    #     lightAmbient = [0.5, 0.5, 0.5, 1.0]
-    #     lightDiffuse = [0.5, 0.5, 0.5, 1.0]
-    #     lightSpecular = [0.5, 0.5, 0.5, 1.0]
-    #     lightPosition = [1, 1, -1, 0]    # vector: point at infinity
-    #     glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient)
-    #     glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse)
-    #     glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular)
-    #     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition)
-    #     glEnable(GL_LIGHT0)
 
     def display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -62,7 +80,8 @@ class Viewer:
 
         glMatrixMode(GL_MODELVIEW)
 
-        # visualize your polygons here
+        block = Block()
+        block.draw()
 
         glutSwapBuffers()
 
@@ -126,8 +145,6 @@ class Viewer:
         glutMotionFunc(self.motion)
         glutPassiveMotionFunc(self.passive_motion) # for monitoring mouse position while it's not pressed
         # glutReshapeFunc(self.reshape)
-
-        # self.light()
 
         glutMainLoop()
 
