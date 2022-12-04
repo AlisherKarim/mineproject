@@ -1,4 +1,5 @@
 from OpenGL.GL import *
+from OpenGL.GLU import *
 from OpenGL.GLUT import *
 import numpy as np
 
@@ -50,13 +51,13 @@ class Block:
     def __init__(self):
         self.textures = load_textures()
 
-    def draw(self):
-        verts = ((1, 1), (1,-1), (-1,-1), (-1,1))
+    def draw(self, idx = 0):
+        verts = ((0.5, 0.5), (0.5,-0.5), (-0.5,-0.5), (-0.5,0.5))
         texts = ((1, 0), (1, 1), (0, 1), (0, 0))
         surf = (0, 1, 2, 3)
 
         glEnable(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, self.textures[0])
+        glBindTexture(GL_TEXTURE_2D, self.textures[idx])
 
         glBegin(GL_QUADS)
         for i in surf:
@@ -69,6 +70,7 @@ class Block:
 
 class Viewer:
     def __init__(self):
+        self.alpha = 0
         pass
 
     def display(self):
@@ -76,9 +78,14 @@ class Viewer:
         # color of clear sky
         glClearColor(135 / 255, 206 / 255, 235 / 255, 1)
         # do not render back facing facets
-        glEnable(GL_CULL_FACE)
+        # glEnable(GL_CULL_FACE)
 
         glMatrixMode(GL_MODELVIEW)
+
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+        glTranslatef(0.0, 0.0, -1)
+        glRotate(self.alpha, 0, 0, 0)
 
         block = Block()
         block.draw()
@@ -98,6 +105,11 @@ class Viewer:
 
     def special(self, key, x, y):
         print(f"special key event: key={key}, x={x}, y={y}")
+
+        if key == 102:
+            self.alpha += 10
+        if key == 100:
+            self.alpha -= 10
 
         glutPostRedisplay()
 
