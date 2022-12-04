@@ -8,10 +8,6 @@ from PIL import Image
 
 IMAGE_PATH = 'texture.png'
 
-# solution for no np.float128/np.complex256 error on windows
-np.float128 = np.longdouble
-np.complex256 = np.clongdouble
-
 def load_textures(path = IMAGE_PATH):
     img = Image.open(path)
     w, h = img.size
@@ -41,7 +37,7 @@ def load_textures(path = IMAGE_PATH):
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, textData)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w/4, h/4, 0, GL_RGBA, GL_UNSIGNED_BYTE, textData)
         textures.append(textID)
 
     return textures
@@ -50,6 +46,7 @@ def load_textures(path = IMAGE_PATH):
 class Block:
     def __init__(self):
         self.textures = load_textures()
+        # self.idx = 0
 
     def draw(self, idx = 0):
         verts = ((0.5, 0.5), (0.5,-0.5), (-0.5,-0.5), (-0.5,0.5))
@@ -70,8 +67,7 @@ class Block:
 
 class Viewer:
     def __init__(self):
-        self.alpha = 0
-        pass
+        self.idx = 0
 
     def display(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -84,11 +80,12 @@ class Viewer:
 
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+        glRotate(30, 0, 0, -1)
         glTranslatef(0.0, 0.0, -1)
-        glRotate(self.alpha, 0, 0, 0)
+
 
         block = Block()
-        block.draw()
+        block.draw(self.idx)
 
         glutSwapBuffers()
 
@@ -101,15 +98,15 @@ class Viewer:
         if glutGetModifiers() & GLUT_ACTIVE_CTRL:
             print("ctrl pressed")
 
+        if key == b'f':
+            self.idx = (self.idx + 1) % 6
+
+
         glutPostRedisplay()
 
     def special(self, key, x, y):
         print(f"special key event: key={key}, x={x}, y={y}")
 
-        if key == 102:
-            self.alpha += 10
-        if key == 100:
-            self.alpha -= 10
 
         glutPostRedisplay()
 
