@@ -24,13 +24,7 @@ FLYING_SPEED = 15
 
 GRAVITY = 20.0
 MAX_JUMP_HEIGHT = 1.0  # About the height of a block.
-# To derive the formula for calculating jump speed, first solve
-#    v_t = v_0 + a * t
-# for the time at which you achieve maximum height, where a is the acceleration
-# due to gravity and v_t = 0. This gives:
-#    t = - v_0 / a
-# Use t and the desired MAX_JUMP_HEIGHT to solve for v_0 (jump speed) in
-#    s = s_0 + v_0 * t + (a * t^2) / 2
+
 JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
 TERMINAL_VELOCITY = 50
 
@@ -78,7 +72,7 @@ def tex_coords(top, bottom, side):
     return result
 
 
-TEXTURE_PATH = 'texture.png'
+TEXTURE_PATH = 'texture1.png'
 
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))
 SAND = tex_coords((1, 1), (1, 1), (1, 1))
@@ -189,9 +183,9 @@ class Model(object):
             for y in xrange(c, c + h):
                 for x in xrange(a - s, a + s + 1):
                     for z in xrange(b - s, b + s + 1):
-                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
+                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:  # kind of circular shape
                             continue
-                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
+                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:  # cannot be close to the corner
                             continue
                         self.add_block((x, y, z), t, immediate=False)
                 s -= d  # decrement side length so hills taper off
@@ -221,7 +215,7 @@ class Model(object):
                 return key, previous
             previous = key
             x, y, z = x + dx / m, y + dy / m, z + dz / m
-        return None, None
+        return None, previous
 
     def exposed(self, position):
         """ Returns False is given `position` is surrounded on all 6 sides by
@@ -489,6 +483,9 @@ class Window(pyglet.window.Window):
         # Instance of the model that handles the world.
         self.model = Model()
 
+        self.on_air = {}
+        self.block_velocity = {}
+
         # The label that is displayed in the top left of the canvas.
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18,
                                        x=10, y=self.height - 10, anchor_x='left', anchor_y='top',
@@ -597,6 +594,31 @@ class Window(pyglet.window.Window):
         # walking
         speed = FLYING_SPEED if self.flying else WALKING_SPEED
         d = dt * speed  # distance covered this tick.
+
+        bls = list(self.on_air.keys())
+        for pos in bls:
+            bx, by, bz = pos
+            
+            texture = self.on_air[pos]
+            vel = self.block_velocity[pos]
+            del self.on_air[pos]       
+            del self.block_velocity[pos]
+            # del self.model.world[pos]
+            self.model.remove_block(pos, True) 
+            
+            vel -= dt*GRAVITY
+            vel = max(vel, -TERMINAL_VELOCITY)
+            
+            bx, by, bz = self.collide((bx, by + vel*dt / 2, bz), 1)
+            
+            if by == 0:
+                self.model.add_block(normalize(bx, by, bz), texture, False)
+                continue
+            self.on_air[(bx, by, bz)] = texture
+            self.block_velocity[(bx, by, bz)] = vel
+            self.model.add_block((bx, by, bz), texture, True)
+
+
         dx, dy, dz = self.get_motion_vector()
         # New position in space, before accounting for gravity.
         dx, dy, dz = dx * d, dy * d, dz * d
@@ -634,7 +656,7 @@ class Window(pyglet.window.Window):
         # have to count as a collision. If 0, touching terrain at all counts as
         # a collision. If .49, you sink into the ground, as if walking through
         # tall grass. If >= .5, you'll fall through the ground.
-        pad = 0.25
+        pad = 0.1 # 0.25
         p = list(position)
         np = normalize(position)
         for face in FACES:  # check all surrounding blocks
@@ -682,8 +704,14 @@ class Window(pyglet.window.Window):
             if (button == mouse.RIGHT) or \
                     ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
                 # ON OSX, control + left click = right click.
-                if previous:
+                if block is None:  # block is created on the air
+                    self.on_air[previous] = self.block
                     self.model.add_block(previous, self.block)
+                    self.block_velocity[previous] = 0
+                
+                elif previous:
+                    self.model.add_block(previous, self.block)
+
             elif button == pyglet.window.mouse.LEFT and block:
                 texture = self.model.world[block]
                 if texture != STONE:
@@ -829,20 +857,22 @@ class Window(pyglet.window.Window):
         crosshairs.
 
         """
-        vector = self.get_sight_vector()
-        block = self.model.hit_test(self.position, vector)[0]
-        if block:
-            x, y, z = block
-            vertex_data = cube_vertices(x, y, z, 0.51)
-            glColor3d(0, 0, 0)
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-            pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        return
+        # vector = self.get_sight_vector()
+        # block = self.model.hit_test(self.position, vector)[0]
+        # if block:
+        #     x, y, z = block
+        #     vertex_data = cube_vertices(x, y, z, 0.51)
+        #     glColor3d(0, 0, 0)
+        #     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        #     pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
+        #     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     def draw_label(self):
         """ Draw the label in the top left of the screen.
 
         """
+        return
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z,
@@ -897,7 +927,7 @@ def setup():
 
 
 def main():
-    window = Window(width=800, height=600, caption='Pyglet', resizable=True)
+    window = Window(width=800, height=600, caption='CSE47101', resizable=True)
     # Hide the mouse cursor and prevent the mouse from leaving the window.
     window.set_exclusive_mouse(True)
     setup()
