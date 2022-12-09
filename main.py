@@ -616,7 +616,7 @@ class Window(pyglet.window.Window):
             vel -= dt*GRAVITY
             vel = max(vel, -TERMINAL_VELOCITY)
             
-            (bx, by, bz), collides = self.collide((bx, by + vel*dt / 2, bz), 1)
+            (bx, by, bz), collides = self.collide((bx, by + vel*dt, bz), 1)
             
             if collides:
                 self.model.add_block(normalize((bx, by, bz)), texture, True)
