@@ -124,6 +124,13 @@ def sectorize(position):
     return (x, 0, z)
 
 
+class Block():
+    def __init__(self, pos = (0, 0, 0), texture = GRASS):
+        self.position = pos
+        self.texture = texture
+        self.is_moving = False
+        self.velocity = 0
+    
 class Model(object):
 
     def __init__(self):
@@ -609,10 +616,10 @@ class Window(pyglet.window.Window):
             vel -= dt*GRAVITY
             vel = max(vel, -TERMINAL_VELOCITY)
             
-            bx, by, bz = self.collide((bx, by + vel*dt / 2, bz), 1)
+            (bx, by, bz), collides = self.collide((bx, by + vel*dt / 2, bz), 1)
             
-            if by == 0:
-                self.model.add_block(normalize(bx, by, bz), texture, False)
+            if collides:
+                self.model.add_block(normalize((bx, by, bz)), texture, True)
                 continue
             self.on_air[(bx, by, bz)] = texture
             self.block_velocity[(bx, by, bz)] = vel
@@ -632,7 +639,7 @@ class Window(pyglet.window.Window):
             dy += self.dy * dt
         # collisions
         x, y, z = self.position
-        x, y, z = self.collide((x + dx, y + dy, z + dz), PLAYER_HEIGHT)
+        (x, y, z), collides = self.collide((x + dx, y + dy, z + dz), PLAYER_HEIGHT)
         self.position = (x, y, z)
 
     def collide(self, position, height):
@@ -659,6 +666,7 @@ class Window(pyglet.window.Window):
         pad = 0.1 # 0.25
         p = list(position)
         np = normalize(position)
+        collides = False
         for face in FACES:  # check all surrounding blocks
             for i in xrange(3):  # check each dimension independently
                 if not face[i]:
@@ -677,9 +685,10 @@ class Window(pyglet.window.Window):
                     if face == (0, -1, 0) or face == (0, 1, 0):
                         # You are colliding with the ground or ceiling, so stop
                         # falling / rising.
+                        collides = True
                         self.dy = 0
                     break
-        return tuple(p)
+        return tuple(p), collides
 
     def on_mouse_press(self, x, y, button, modifiers):
         """ Called when a mouse button is pressed. See pyglet docs for button
