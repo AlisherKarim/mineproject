@@ -124,12 +124,6 @@ def sectorize(position):
     return (x, 0, z)
 
 
-class Block():
-    def __init__(self, pos = (0, 0, 0), texture = GRASS):
-        self.position = pos
-        self.texture = texture
-        self.is_moving = False
-        self.velocity = 0
     
 class Model(object):
 
