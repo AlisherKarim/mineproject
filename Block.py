@@ -33,7 +33,9 @@ FACES = [
 
 class Block():
   def __init__(self, pos = (0, 0, 0), texture = GRASS):
+    self.id = 0
     self.position = pos
+    self.sector = (0, 0, 0)
     self.texture = texture
     self.is_moving = False
     self.velocity = 0

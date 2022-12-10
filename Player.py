@@ -51,6 +51,9 @@ class Player:
     
   def move_right(self):
     self.movement[1] += 1
+    
+  def stop(self):
+    self.movement = [0, 0]
   
   def get_motion_vector(self):
     """ Returns the current motion vector indicating the velocity of the

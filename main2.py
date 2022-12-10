@@ -322,14 +322,8 @@ class Window(pyglet.window.Window):
           Number representing any modifying keys that were pressed.
 
       """
-      if symbol == key.W:
-        self.player.move_backward()
-      elif symbol == key.S:
-        self.player.move_forward()
-      elif symbol == key.A:
-        self.player.move_right()
-      elif symbol == key.D:
-        self.player.move_left()
+      if symbol in [key.W, key.A, key.S, key.D]:
+        self.player.stop()
 
     def set_2d(self):
         """ Configure OpenGL to draw in 2d.
@@ -355,7 +349,7 @@ class Window(pyglet.window.Window):
         glViewport(0, 0, max(1, viewport[0]), max(1, viewport[1]))
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(65.0, width / float(height), 0.1, 60.0)
+        gluPerspective(65.0, width / float(height), 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         x, y = self.player.look
