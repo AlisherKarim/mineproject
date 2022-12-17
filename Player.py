@@ -58,19 +58,9 @@ class Player:
     self.movement[0] = 0
   
   def get_motion_vector(self):
-    """ Returns the current motion vector indicating the velocity of the
-    player.
-
-    Returns
-    -------
-    vector : tuple of len 3
-        Tuple containing the velocity in x, y, and z respectively.
-
-    """
     if any(self.movement):
       x, y = self.look
       strafe = math.degrees(math.atan2(*self.movement))
-      y_angle = math.radians(y)
       x_angle = math.radians(x + strafe)
       dy = 0.0
       dx = math.cos(x_angle)
@@ -81,18 +71,9 @@ class Player:
       dz = 0.0
     return (dx, dy, dz)
   
-  def get_sight_vector(self):
-    """ Returns the current line of sight vector indicating the direction
-    the player is looking.
-
-    """
+  def get_look_vector(self):
     x, y = self.look
-    # y ranges from -90 to 90, or -pi/2 to pi/2, so m ranges from 0 to 1 and
-    # is 1 when looking ahead parallel to the ground and 0 when looking
-    # straight up or down.
     m = math.cos(math.radians(y))
-    # dy ranges from -1 to 1 and is -1 when looking straight down and 1 when
-    # looking straight up.
     dy = math.sin(math.radians(y))
     dx = math.cos(math.radians(x - 90)) * m
     dz = math.sin(math.radians(x - 90)) * m

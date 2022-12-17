@@ -31,11 +31,6 @@ FACES = [
   (0, 0, -1),
 ]
 
-def normalize(position):
-  x, y, z = position
-  x, y, z = (int(round(x)), int(round(y)), int(round(z)))
-  return (x, y, z)
-
 class Block():
   def __init__(self, pos = (0, 0, 0)):
     self._position = pos
@@ -57,10 +52,16 @@ class Block():
   def getVertices(self, n):
     x, y, z = self._position
     return [
-      x-n, y+n, z-n, x-n, y+n, z+n, x+n, y+n, z+n, x+n, y+n, z-n,  # top
-      x-n, y-n, z-n, x+n, y-n, z-n, x+n, y-n, z+n, x-n, y-n, z+n,  # bottom
-      x-n, y-n, z-n, x-n, y-n, z+n, x-n, y+n, z+n, x-n, y+n, z-n,  # left
-      x+n, y-n, z+n, x+n, y-n, z-n, x+n, y+n, z-n, x+n, y+n, z+n,  # right
-      x-n, y-n, z+n, x+n, y-n, z+n, x+n, y+n, z+n, x-n, y+n, z+n,  # front
-      x+n, y-n, z-n, x-n, y-n, z-n, x-n, y+n, z-n, x+n, y+n, z-n,  # back
+      x-n, y+n, z-n, x-n, y+n, z+n,
+      x+n, y+n, z+n, x+n, y+n, z-n,  # top
+      x-n, y-n, z-n, x+n, y-n, z-n, 
+      x+n, y-n, z+n, x-n, y-n, z+n,  # bottom
+      x-n, y-n, z-n, x-n, y-n, z+n, 
+      x-n, y+n, z+n, x-n, y+n, z-n,  # left
+      x+n, y-n, z+n, x+n, y-n, z-n, 
+      x+n, y+n, z-n, x+n, y+n, z+n,  # right
+      x-n, y-n, z+n, x+n, y-n, z+n, 
+      x+n, y+n, z+n, x-n, y+n, z+n,  # front
+      x+n, y-n, z-n, x-n, y-n, z-n, 
+      x-n, y+n, z-n, x+n, y+n, z-n,  # back
     ]
