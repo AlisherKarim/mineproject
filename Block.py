@@ -36,17 +36,9 @@ def normalize(position):
   x, y, z = (int(round(x)), int(round(y)), int(round(z)))
   return (x, y, z)
 
-SECTOR_SIZE = 16
-
-def sectorize(position):
-  x, y, z = normalize(position)
-  x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
-  return (x, 0, z)
-
 class Block():
   def __init__(self, pos = (0, 0, 0)):
     self._position = pos
-    self._sector = sectorize(pos)
     self.is_moving = False
     self.velocity = 0
   
@@ -61,10 +53,6 @@ class Block():
   
   def setPosition(self, pos):
     self._position = pos
-    self._sector = sectorize(pos)
-  
-  def getSector(self):
-    return self._sector
   
   def getVertices(self, n):
     x, y, z = self._position

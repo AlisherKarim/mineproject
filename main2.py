@@ -15,9 +15,6 @@ from Block import *
 
 TICKS_PER_SEC = 60
 
-# Size of sectors used to ease block loading.
-SECTOR_SIZE = 16
-
 SPEED = 5
 FLYING_SPEED = 15
 
@@ -49,24 +46,6 @@ def normalize(position):
     x, y, z = (int(round(x)), int(round(y)), int(round(z)))
     return (x, y, z)
 
-
-def sectorize(position):
-    """ Returns a tuple representing the sector for the given `position`.
-
-    Parameters
-    ----------
-    position : tuple of len 3
-
-    Returns
-    -------
-    sector : tuple of len 3
-
-    """
-    x, y, z = normalize(position)
-    x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
-    return (x, 0, z)
-
-
 class Window(pyglet.window.Window):
 
   def __init__(self, *args, **kwargs):
@@ -84,8 +63,6 @@ class Window(pyglet.window.Window):
         key._1, key._2, key._3, key._4, key._5,
         key._6, key._7, key._8, key._9, key._0]
 
-    # This call schedules the `update()` method to be called
-    # TICKS_PER_SEC. This is the main game event loop.
     pyglet.clock.schedule_interval(self.update, 1.0 / TICKS_PER_SEC)
 
   def set_exclusive_mouse(self, exclusive):
@@ -109,12 +86,7 @@ class Window(pyglet.window.Window):
 
     """
     self.world.process_queue()
-    sector = sectorize(self.player.position)
-    if sector != self.player.sector:
-        self.world.change_sectors(self.player.sector, sector)
-        if self.player.sector is None:
-            self.world.process_entire_queue()
-        self.player.sector = sector
+    # self.world.process_entire_queue()
     m = 8
     dt = min(dt, 0.2)
     for _ in xrange(m):
@@ -172,7 +144,6 @@ class Window(pyglet.window.Window):
     x, y, z = self.player.position
     (x, y, z), collides = self.collision((x + dx, y + dy, z + dz), self.player.height)
     self.player.position = (x, y, z)
-    self.player.sector = sectorize((x, y, z))
 
   def collision(self, position, height):
     """ Checks to see if the player at the given `position` and `height`
@@ -289,17 +260,6 @@ class Window(pyglet.window.Window):
           self.player.look = (x, y)
 
   def on_key_press(self, symbol, modifiers):
-    """ Called when the player presses a key. See pyglet docs for key
-    mappings.
-
-    Parameters
-    ----------
-    symbol : int
-        Number representing the key that was pressed.
-    modifiers : int
-        Number representing any modifying keys that were pressed.
-
-    """
     if symbol == key.W:
       self.player.move_forward()
     elif symbol == key.S:
@@ -318,8 +278,10 @@ class Window(pyglet.window.Window):
       self.player.current_block_texture = self.player.inventory[idx]
 
   def on_key_release(self, symbol, modifiers):
-    if symbol in [key.W, key.A, key.S, key.D]:
-      self.player.stop()
+    if symbol in [key.W, key.S]:
+      self.player.stopForwardMovement()
+    else:
+      self.player.stopSideMovement()
 
   def set_2d(self):
       width, height = self.get_size()

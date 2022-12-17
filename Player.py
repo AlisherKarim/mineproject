@@ -35,25 +35,27 @@ class Player:
     self.height = 2
     self.movement = [0, 0]
     self.fall_velocity = 0
-    self.sector = None
     self.look = (0, 0)
     self.inventory = [BRICK, SAND, STONE]
     self.current_block_texture = self.inventory[0]
   
   def move_forward(self):
-    self.movement[0] -= 1
+    self.movement[0] = -1
   
   def move_backward(self):
-    self.movement[0] += 1
+    self.movement[0] = 1
     
   def move_left(self):
-    self.movement[1] -= 1
+    self.movement[1] = -1
     
   def move_right(self):
-    self.movement[1] += 1
+    self.movement[1] = 1
     
-  def stop(self):
-    self.movement = [0, 0]
+  def stopSideMovement(self):
+    self.movement[1] = 0
+    
+  def stopForwardMovement(self):
+    self.movement[0] = 0
   
   def get_motion_vector(self):
     """ Returns the current motion vector indicating the velocity of the
