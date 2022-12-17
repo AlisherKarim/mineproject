@@ -19,13 +19,6 @@ def normalize(position):
   x, y, z = (int(round(x)), int(round(y)), int(round(z)))
   return (x, y, z)
 
-SECTOR_SIZE = 16
-
-def sectorize(position):
-  x, y, z = normalize(position)
-  x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
-  return (x, 0, z)
-
 TICKS_PER_SEC = 60
 
 if sys.version_info[0] >= 3:
@@ -38,20 +31,18 @@ class World(object):
         self.batch = pyglet.graphics.Batch()
         self.group = TextureGroup(image.load(TEXTURE_PATH).get_texture())
 
-        self.world = {}
+        self.world_blocks = set()
+        self.block_to_texture = {}
+        self.block_to_vList = {}
 
         # Same mapping as `world` but only contains blocks that are shown.
-        self.shown = {}
+        self.shown = set()
 
-        # Mapping from position to a pyglet `VertextList` for all shown blocks.
-        self._shown = {}
-
-        # Mapping from sector to a list of positions inside that sector.
+        # sector to list of Blocks
         self.sectors = {}
         
         
-        self.on_air = {}
-        self.block_velocity = {}
+        self.on_air = set()
 
         # Simple function queue implementation. The queue is populated with
         # _show_block() and _hide_block() calls
@@ -63,18 +54,22 @@ class World(object):
         """ Initialize the world by placing all the blocks.
 
         """
-        n = 80  # 1/2 width and height of world
+        n = 50  # 1/2 width and height of world
         s = 1  # step size
         y = 0  # initial y height
         for x in xrange(-n, n + 1, s):
             for z in xrange(-n, n + 1, s):
                 # create a layer stone an Block.grass everywhere.
-                self.add_block((x, y - 2, z), GRASS, immediate=False)
-                self.add_block((x, y - 3, z), STONE, immediate=False)
-                if x in (-n, n) or z in (-n, n):
-                    # create outer walls.
-                    for dy in xrange(-2, 3):
-                        self.add_block((x, y + dy, z), STONE, immediate=False)
+                grass_block = Block((x, y - 2, z))
+                stone_block = Block((x, y - 3, z))
+                self.block_to_texture[grass_block] = GRASS
+                self.block_to_texture[stone_block] = STONE
+                self.add_block(grass_block, immediate=False)
+                self.add_block(stone_block, immediate=False)
+                # if x in (-n, n) or z in (-n, n):
+                #   for dy in xrange(-2, 3):      
+                    
+                #     self.add_block(Block((x, y + dy, z), STONE), immediate=False)
 
         # generate the hills randomly
         o = n - 10
@@ -93,7 +88,9 @@ class World(object):
                             continue
                         if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:  # cannot be close to the corner
                             continue
-                        self.add_block((x, y, z), t, immediate=False)
+                        random_block = Block((x, y, z))
+                        self.block_to_texture[random_block] = t
+                        self.add_block(random_block, immediate=False)
                 s -= d  # decrement side length so hills taper off
 
     def hit_test(self, position, vector, max_distance=8):
@@ -114,27 +111,30 @@ class World(object):
         m = 8
         x, y, z = position
         dx, dy, dz = vector
-        previous = None
+        previous_pos = None
+        hit_block = Block()
         for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
-            if key != previous and key in self.world:
-                return key, previous
-            previous = key
+            hit_block.setPosition(normalize((x, y, z)))
+            if hit_block.getPosition != previous_pos and hit_block in self.world_blocks:
+              return hit_block, previous_pos
+            previous_pos = hit_block.getPosition()
             x, y, z = x + dx / m, y + dy / m, z + dz / m
-        return None, previous
+        return None, previous_pos
 
-    def exposed(self, position):
+    def exposed(self, block : Block):
         """ Returns False is given `position` is surrounded on all 6 sides by
         blocks, True otherwise.
 
         """
-        x, y, z = position
+        x, y, z = block.getPosition()
+        currentBlock = Block((x, y, z))
         for dx, dy, dz in FACES:
-            if (x + dx, y + dy, z + dz) not in self.world:
-                return True
+          currentBlock.setPosition((x + dx, y + dy, z + dz))
+          if currentBlock not in self.world_blocks:
+            return True
         return False
 
-    def add_block(self, position, texture, immediate=True):
+    def add_block(self, block : Block, immediate : bool=True):
         """ Add a block with the given `texture` and `position` to the world.
 
         Parameters
@@ -148,16 +148,16 @@ class World(object):
             Whether or not to draw the block immediately.
 
         """
-        if position in self.world:
-            self.remove_block(position, immediate)
-        self.world[position] = texture
-        self.sectors.setdefault(sectorize(position), []).append(position)
+        if block in self.world_blocks:
+          self.remove_block(block, immediate)
+        self.world_blocks.add(block)
+        self.sectors.setdefault(block.getSector(), []).append(block)
         if immediate:
-            if self.exposed(position):
-                self.show_block(position)
-            self.check_neighbors(position)
+          if self.exposed(block):
+            self.show_block(block)
+          self.check_neighbors(block)
 
-    def remove_block(self, position, immediate=True):
+    def remove_block(self, block : Block, immediate=True):
         """ Remove the block at the given `position`.
 
         Parameters
@@ -168,33 +168,33 @@ class World(object):
             Whether or not to immediately remove block from canvas.
 
         """
-        del self.world[position]
-        self.sectors[sectorize(position)].remove(position)
+        self.world_blocks.remove(block)
+        self.sectors[block.getSector()].remove(block)
         if immediate:
-            if position in self.shown:
-                self.hide_block(position)
-            self.check_neighbors(position)
+          if block in self.shown:
+            self.hide_block(block)
+          self.check_neighbors(block)
 
-    def check_neighbors(self, position):
+    def check_neighbors(self, block : Block):
         """ Check all blocks surrounding `position` and ensure their visual
         state is current. This means hiding blocks that are not exposed and
         ensuring that all exposed blocks are shown. Usually used after a block
         is added or removed.
 
         """
-        x, y, z = position
+        x, y, z = block.getPosition()
         for dx, dy, dz in FACES:
-            key = (x + dx, y + dy, z + dz)
-            if key not in self.world:
+            b = Block((x + dx, y + dy, z + dz))
+            if b not in self.world_blocks:
                 continue
-            if self.exposed(key):
-                if key not in self.shown:
-                    self.show_block(key)
+            if self.exposed(b):
+                if b not in self.shown:
+                    self.show_block(b)
             else:
-                if key in self.shown:
-                    self.hide_block(key)
+                if b in self.shown:
+                    self.hide_block(b)
 
-    def show_block(self, position, immediate=True):
+    def show_block(self, block : Block, immediate=True):
         """ Show the block at the given `position`. This method assumes the
         block has already been added with add_block()
 
@@ -206,102 +206,69 @@ class World(object):
             Whether or not to show the block immediately.
 
         """
-        texture = self.world[position]
-        self.shown[position] = texture
+        self.shown.add(block)
         if immediate:
-            self._show_block(position, texture)
+            self._show_block(block)
         else:
-            self._enqueue(self._show_block, position, texture)
+            self._enqueue(self._show_block, block)
 
-    def _show_block(self, position, texture):
-        """ Private implementation of the `show_block()` method.
-
-        Parameters
-        ----------
-        position : tuple of len 3
-            The (x, y, z) position of the block to show.
-        texture : list of len 3
-            The coordinates of the texture squares. Use `tex_coords()` to
-            generate.
-
-        """
-        x, y, z = position
-        vertex_data = Block((x, y, z)).getVertices(0.5)
-        texture_data = list(texture)
-        # create vertex list
-        # FIXME Maybe `add_indexed()` should be used instead
-        self._shown[position] = self.batch.add(24, GL_QUADS, self.group,
+    def _show_block(self, block : Block):
+        vertex_data = block.getVertices(0.5)
+        texture_data = list(self.block_to_texture[block])
+        self.block_to_vList[block] = self.batch.add(24, GL_QUADS, self.group,
                                                ('v3f/static', vertex_data),
                                                ('t2f/static', texture_data))
+        if block.getPosition == (0, -2, 0):
+          print(block.vList)
 
-    def hide_block(self, position, immediate=True):
-        """ Hide the block at the given `position`. Hiding does not remove the
-        block from the world.
-
-        Parameters
-        ----------
-        position : tuple of len 3
-            The (x, y, z) position of the block to hide.
-        immediate : bool
-            Whether or not to immediately remove the block from the canvas.
-
-        """
-        self.shown.pop(position)
+    def hide_block(self, block : Block, immediate=True):
+        self.shown.remove(block)
         if immediate:
-            self._hide_block(position)
+          self._hide_block(block)
         else:
-            self._enqueue(self._hide_block, position)
+          self._enqueue(self._hide_block, block)
 
-    def _hide_block(self, position):
-        """ Private implementation of the 'hide_block()` method.
+    def _hide_block(self, block : Block):
+      """ Private implementation of the 'hide_block()` method.
 
-        """
-        self._shown.pop(position).delete()
+      """
+      self.block_to_vList[block].delete()
 
     def show_sector(self, sector):
-        """ Ensure all blocks in the given sector that should be shown are
-        drawn to the canvas.
+      """ Ensure all blocks in the given sector that should be shown are
+      drawn to the canvas.
 
-        """
-        for position in self.sectors.get(sector, []):
-            if position not in self.shown and self.exposed(position):
-                self.show_block(position, False)
+      """
+      for block in self.sectors.get(sector, []):
+        if block not in self.shown and self.exposed(block):
+          self.show_block(block, False)
 
     def hide_sector(self, sector):
-        """ Ensure all blocks in the given sector that should be hidden are
-        removed from the canvas.
-
-        """
-        for position in self.sectors.get(sector, []):
-            if position in self.shown:
-                self.hide_block(position, False)
+      for block in self.sectors.get(sector, []):
+        if block in self.shown:
+          self.hide_block(block, False)
 
     def change_sectors(self, before, after):
-        """ Move from sector `before` to sector `after`. A sector is a
-        contiguous x, y sub-region of world. Sectors are used to speed up
-        world rendering.
-
-        """
-        before_set = set()
-        after_set = set()
-        pad = 4
-        for dx in xrange(-pad, pad + 1):
-            for dy in [0]:  # xrange(-pad, pad + 1):
-                for dz in xrange(-pad, pad + 1):
-                    if dx ** 2 + dy ** 2 + dz ** 2 > (pad + 1) ** 2:
-                        continue
-                    if before:
-                        x, y, z = before
-                        before_set.add((x + dx, y + dy, z + dz))
-                    if after:
-                        x, y, z = after
-                        after_set.add((x + dx, y + dy, z + dz))
-        show = after_set - before_set
-        hide = before_set - after_set
-        for sector in show:
-            self.show_sector(sector)
-        for sector in hide:
-            self.hide_sector(sector)
+      before_set = set()
+      after_set = set()
+      pad = 4
+      for dx in xrange(-pad, pad + 1):
+          for dy in [0]:  # xrange(-pad, pad + 1):
+              for dz in xrange(-pad, pad + 1):
+                  if dx ** 2 + dy ** 2 + dz ** 2 > (pad + 1) ** 2:
+                      continue
+                  if before:
+                      x, y, z = before
+                      before_set.add((x + dx, y + dy, z + dz))
+                  if after:
+                      x, y, z = after
+                      after_set.add((x + dx, y + dy, z + dz))
+      show = after_set - before_set
+      hide = before_set - after_set
+      for sector in show:
+          self.show_sector(sector)
+      for sector in hide:
+          self.hide_sector(sector)
 
     def _enqueue(self, func, *args):
         """ Add `func` to the internal queue.

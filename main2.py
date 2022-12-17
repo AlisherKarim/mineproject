@@ -134,16 +134,16 @@ class Window(pyglet.window.Window):
     speed = SPEED
     d = dt * speed  # distance covered this tick.
 
-    bls = list(self.world.on_air.keys())
-    for pos in bls:
-      bx, by, bz = pos
+    bls = list(self.world.on_air)
+    for block in bls:
+      bx, by, bz = block.getPosition()
       
-      texture = self.world.on_air[pos]
-      vel = self.world.block_velocity[pos]
-      del self.world.on_air[pos]       
-      del self.world.block_velocity[pos]
-      # del self.world.world[pos]
-      self.world.remove_block(pos, True) 
+      texture = self.world.block_to_texture[block]
+      vel = block.velocity
+      
+      self.world.on_air.remove(block) 
+      del self.world.block_to_texture[block]
+      self.world.remove_block(block, True)
       
       vel -= dt*GRAVITY
       vel = max(vel, -TERMINAL_VELOCITY)
@@ -151,12 +151,15 @@ class Window(pyglet.window.Window):
       (bx, by, bz), collides = self.collision((bx, by + vel*dt, bz), 1)
       
       if collides:
-        self.world.add_block(normalize((bx, by, bz)), texture, True)
+        self.world.block_to_texture[Block(normalize((bx, by, bz)))] = texture
+        self.world.add_block(Block(normalize((bx, by, bz))), True)
         continue
-      self.world.on_air[(bx, by, bz)] = texture
-      self.world.block_velocity[(bx, by, bz)] = vel
-      self.world.add_block((bx, by, bz), texture, True)
-
+      
+      new_block = Block((bx, by, bz))
+      self.world.block_to_texture[new_block] = texture
+      new_block.velocity = vel
+      self.world.on_air.add(new_block)
+      self.world.add_block(new_block, True)
 
     dx, dy, dz = self.player.get_motion_vector()
     # New position in space, before accounting for gravity.
@@ -169,6 +172,7 @@ class Window(pyglet.window.Window):
     x, y, z = self.player.position
     (x, y, z), collides = self.collision((x + dx, y + dy, z + dz), self.player.height)
     self.player.position = (x, y, z)
+    self.player.sector = sectorize((x, y, z))
 
   def collision(self, position, height):
     """ Checks to see if the player at the given `position` and `height`
@@ -207,7 +211,7 @@ class Window(pyglet.window.Window):
           op = list(np)
           op[1] -= dy
           op[i] += face[i]
-          if tuple(op) not in self.world.world:
+          if Block(tuple(op)) not in self.world.world_blocks:
             continue
           p[i] -= (d - pad) * face[i]
           if face == (0, -1, 0) or face == (0, 1, 0):
@@ -241,13 +245,16 @@ class Window(pyglet.window.Window):
           if (button == mouse.RIGHT) or \
                   ((button == mouse.LEFT) and (modifiers & key.MOD_CTRL)):
               # ON OSX, control + left click = right click.
+              
+              new_block = Block(previous)
+              self.world.block_to_texture[new_block] = self.player.current_block_texture
+              
               if block is None:  # block is created on the air
-                  self.world.on_air[previous] = self.player.current_block_texture
-                  self.world.add_block(previous, self.player.current_block_texture)
-                  self.world.block_velocity[previous] = 0
+                self.world.on_air.add(new_block)
+                self.world.add_block(new_block)
               
               elif previous:
-                  self.world.add_block(previous, self.player.current_block_texture)
+                  self.world.add_block(new_block)
                   (a, b, c) = previous
                   (x, y, z) = self.player.position
                   if (a, 0, c) == normalize((x, 0, z)):
@@ -256,9 +263,9 @@ class Window(pyglet.window.Window):
                       self.player.fall_velocity = JUMP_SPEED
 
           elif button == pyglet.window.mouse.LEFT and block:
-              texture = self.world.world[block]
-              if texture != STONE:
-                  self.world.remove_block(block)
+              if self.world.block_to_texture[block] != STONE:
+                del self.world.block_to_texture[block]
+                self.world.remove_block(block)
       else:
           self.set_exclusive_mouse(True)
 

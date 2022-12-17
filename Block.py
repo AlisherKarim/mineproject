@@ -31,18 +31,43 @@ FACES = [
   (0, 0, -1),
 ]
 
+def normalize(position):
+  x, y, z = position
+  x, y, z = (int(round(x)), int(round(y)), int(round(z)))
+  return (x, y, z)
+
+SECTOR_SIZE = 16
+
+def sectorize(position):
+  x, y, z = normalize(position)
+  x, y, z = x // SECTOR_SIZE, y // SECTOR_SIZE, z // SECTOR_SIZE
+  return (x, 0, z)
+
 class Block():
-  def __init__(self, pos = (0, 0, 0), texture = GRASS):
-    self.id = 0
-    self.position = pos
-    self.sector = (0, 0, 0)
-    self.texture = texture
+  def __init__(self, pos = (0, 0, 0)):
+    self._position = pos
+    self._sector = sectorize(pos)
     self.is_moving = False
     self.velocity = 0
-    self.vList = None
+  
+  def __eq__(self, other):
+    return (other.getPosition()) == (self._position)
+  
+  def __hash__(self):
+    return hash(self._position)
+  
+  def getPosition(self):
+    return self._position
+  
+  def setPosition(self, pos):
+    self._position = pos
+    self._sector = sectorize(pos)
+  
+  def getSector(self):
+    return self._sector
   
   def getVertices(self, n):
-    x, y, z = self.position
+    x, y, z = self._position
     return [
       x-n, y+n, z-n, x-n, y+n, z+n, x+n, y+n, z+n, x+n, y+n, z-n,  # top
       x-n, y-n, z-n, x+n, y-n, z-n, x+n, y-n, z+n, x-n, y-n, z+n,  # bottom
