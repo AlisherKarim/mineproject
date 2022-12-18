@@ -24,7 +24,6 @@ class World(object):
     self.world_blocks = set()
     self.block_to_texture = {}
     self.block_to_vList = {}
-    self.shown = set()
     self.on_air = set()
     self._initialize()
 
@@ -81,19 +80,12 @@ class World(object):
     if block in self.world_blocks:
       self.remove_block(block)
     self.world_blocks.add(block)
-    self.show_block(block)
-
-  def remove_block(self, block : Block):
-    self.world_blocks.remove(block)
-    if block in self.shown:
-      self.shown.remove(block)
-      self.block_to_vList[block].delete()
-
-  def show_block(self, block : Block):
-    if block not in self.shown:
-      self.shown.add(block)
     vertex_data = block.getVertices()
     texture_data = list(self.block_to_texture[block])
     self.block_to_vList[block] = self.batch.add(24, GL_QUADS, self.group,
                                               ('v3f/static', vertex_data),
                                               ('t2f/static', texture_data))
+
+  def remove_block(self, block : Block):
+    self.world_blocks.remove(block)
+    self.block_to_vList[block].delete()
