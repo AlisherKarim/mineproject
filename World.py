@@ -98,7 +98,8 @@ class World(object):
   def remove_block(self, block : Block):
     self.world_blocks.remove(block)
     if block in self.shown:
-      self.hide_block(block)
+      self.shown.remove(block)
+      self.block_to_vList[block].delete()
     self.check_neighbors(block)
 
   def check_neighbors(self, block : Block):
@@ -112,7 +113,8 @@ class World(object):
           self.show_block(b)
       else:
         if b in self.shown:
-          self.hide_block(b)
+          self.shown.remove(b)
+          self.block_to_vList[b].delete()
 
   def show_block(self, block : Block):
     if block not in self.shown:
@@ -122,7 +124,3 @@ class World(object):
     self.block_to_vList[block] = self.batch.add(24, GL_QUADS, self.group,
                                               ('v3f/static', vertex_data),
                                               ('t2f/static', texture_data))
-
-  def hide_block(self, block : Block):
-    self.shown.remove(block)
-    self.block_to_vList[block].delete()
