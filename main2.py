@@ -15,11 +15,10 @@ TICKS_PER_SEC = 60
 SPEED = 5
 FLYING_SPEED = 15
 
-GRAVITY = 20.0
+GRAVITY = 10.0
 MAX_JUMP_HEIGHT = 1.0  # About the height of a block.
 
 JUMP_SPEED = math.sqrt(2 * GRAVITY * MAX_JUMP_HEIGHT)
-TERMINAL_VELOCITY = 50
 
 PLAYER_HEIGHT = 2
 
@@ -63,7 +62,6 @@ class Window(pyglet.window.Window):
       self.world.remove_block(block)
       
       vel -= dt*GRAVITY
-      vel = max(vel, -TERMINAL_VELOCITY)
       
       (bx, by, bz), collides = self.collision((bx, by + vel*dt, bz), 1)
       
@@ -81,7 +79,7 @@ class Window(pyglet.window.Window):
     dx, dy, dz = self.player.get_motion_vector()
     dx, dy, dz = dx * d, dy * d, dz * d
     self.player.fall_velocity -= dt * GRAVITY
-    self.player.fall_velocity = max(self.player.fall_velocity, -TERMINAL_VELOCITY)
+    self.player.fall_velocity = self.player.fall_velocity
     dy += self.player.fall_velocity * dt
     x, y, z = self.player.position
     (x, y, z), collides = self.collision((x + dx, y + dy, z + dz), self.player.height)
