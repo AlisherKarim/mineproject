@@ -77,43 +77,17 @@ class World(object):
       x, y, z = x + dx / m, y + dy / m, z + dz / m
     return None, previous_pos
 
-  def exposed(self, block : Block):
-    x, y, z = block.getPosition()
-    currentBlock = Block((x, y, z))
-    for dx, dy, dz in FACES:
-      currentBlock.setPosition((x + dx, y + dy, z + dz))
-      if currentBlock not in self.world_blocks:
-        return True
-    return False
-
   def add_block(self, block : Block):
     if block in self.world_blocks:
       self.remove_block(block)
     self.world_blocks.add(block)
-    if self.exposed(block):
-      self.show_block(block)
-    self.check_neighbors(block)
+    self.show_block(block)
 
   def remove_block(self, block : Block):
     self.world_blocks.remove(block)
     if block in self.shown:
       self.shown.remove(block)
       self.block_to_vList[block].delete()
-    self.check_neighbors(block)
-
-  def check_neighbors(self, block : Block):
-    x, y, z = block.getPosition()
-    for dx, dy, dz in FACES:
-      b = Block((x + dx, y + dy, z + dz))
-      if b not in self.world_blocks:
-          continue
-      if self.exposed(b):
-        if b not in self.shown:
-          self.show_block(b)
-      else:
-        if b in self.shown:
-          self.shown.remove(b)
-          self.block_to_vList[b].delete()
 
   def show_block(self, block : Block):
     if block not in self.shown:
