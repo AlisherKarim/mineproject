@@ -32,7 +32,6 @@ class Window(pyglet.window.Window):
     self.world = World()
 
     self.exclusive = False
-    self.pointer = None
 
     self.num_keys = [key._1, key._2, key._3]
 
@@ -172,19 +171,9 @@ class Window(pyglet.window.Window):
       self.player.stopForwardMovement()
     else:
       self.player.stopSideMovement()
-
-  def set_2d(self):
-    width, height = self.get_size()
-    glDisable(GL_DEPTH_TEST)
-    viewport = self.get_viewport_size()
-    glViewport(0, 0, max(1, viewport[0]), max(1, viewport[1]))
-    glMatrixMode(GL_PROJECTION)
-    glLoadIdentity()
-    glOrtho(0, max(1, width), 0, max(1, height), -1, 1)
-    glMatrixMode(GL_MODELVIEW)
-    glLoadIdentity()
-
-  def set_3d(self):
+      
+  def on_draw(self):
+    self.clear()
     width, height = self.get_size()
     glEnable(GL_DEPTH_TEST)
     viewport = self.get_viewport_size()
@@ -199,26 +188,8 @@ class Window(pyglet.window.Window):
     glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
     x, y, z = self.player.position
     glTranslatef(-x, -y, -z)
-
-  def on_draw(self):
-    self.clear()
-    self.set_3d()
     glColor3d(1, 1, 1)
     self.world.batch.draw()
-    self.set_2d()
-    glColor3d(0, 0, 0)
-    self.pointer.draw(GL_LINES)
-      
-  def on_resize(self, width, height):
-    if self.pointer:
-      self.pointer.delete()
-    x, y = self.width // 2, self.height // 2
-    n = 10
-    self.pointer = pyglet.graphics.vertex_list(4,
-                                                ('v2i', (x - n, y, x + n,
-                                                y, x, y - n, x, y + n))
-                                                )
-
 
 def setup():
   glClearColor(0.5, 0.69, 1.0, 1)
