@@ -62,18 +62,18 @@ class World(object):
             self.add_block(random_block)
         s -= 1
 
-  def ray_trace(self, position, vector, max_distance=8):
-    m = 8
+  def ray_trace(self, position, vector):
     x, y, z = position
     dx, dy, dz = vector
     previous_pos = None
     hit_block = Block()
-    for _ in range(max_distance * m):
+    max_distance=8
+    for _ in range(max_distance * 8):
       hit_block.setPosition(normalize((x, y, z)))
       if hit_block.getPosition != previous_pos and hit_block in self.world_blocks:
         return hit_block, previous_pos
       previous_pos = hit_block.getPosition()
-      x, y, z = x + dx / m, y + dy / m, z + dz / m
+      x, y, z = x + dx / 8, y + dy / 8, z + dz / 8
     return None, previous_pos
 
   def add_block(self, block : Block):
