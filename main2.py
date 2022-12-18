@@ -1,6 +1,6 @@
 import math
 
-from pyglet.gl import *
+import pyglet
 from pyglet.window import key, mouse
 from OpenGL.GL import *
 from OpenGL.GLU import *

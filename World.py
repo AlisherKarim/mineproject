@@ -1,21 +1,20 @@
 import random
 
-from collections import deque
 from pyglet import image
-from pyglet.gl import *
 from pyglet.graphics import TextureGroup, Batch
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from Block import *
+from Player import *
 
 def normalize(position):
   x, y, z = position
   x, y, z = (int(round(x)), int(round(y)), int(round(z)))
   return (x, y, z)
 
-TICKS_PER_SEC = 60
+TEXTURE_PATH = 'texture1.png'
 
 class World(object):
 
