@@ -49,19 +49,19 @@ class Block():
   def setPosition(self, pos):
     self._position = pos
   
-  def getVertices(self, n):
+  def getVertices(self):
     x, y, z = self._position
     return [
-      x-n, y+n, z-n, x-n, y+n, z+n,
-      x+n, y+n, z+n, x+n, y+n, z-n,  # top
-      x-n, y-n, z-n, x+n, y-n, z-n, 
-      x+n, y-n, z+n, x-n, y-n, z+n,  # bottom
-      x-n, y-n, z-n, x-n, y-n, z+n, 
-      x-n, y+n, z+n, x-n, y+n, z-n,  # left
-      x+n, y-n, z+n, x+n, y-n, z-n, 
-      x+n, y+n, z-n, x+n, y+n, z+n,  # right
-      x-n, y-n, z+n, x+n, y-n, z+n, 
-      x+n, y+n, z+n, x-n, y+n, z+n,  # front
-      x+n, y-n, z-n, x-n, y-n, z-n, 
-      x-n, y+n, z-n, x+n, y+n, z-n,  # back
+      x-0.5, y+0.5, z-0.5, x-0.5, y+0.5, z+0.5,
+      x+0.5, y+0.5, z+0.5, x+0.5, y+0.5, z-0.5,  # top
+      x-0.5, y-0.5, z-0.5, x+0.5, y-0.5, z-0.5, 
+      x+0.5, y-0.5, z+0.5, x-0.5, y-0.5, z+0.5,  # bottom
+      x-0.5, y-0.5, z-0.5, x-0.5, y-0.5, z+0.5, 
+      x-0.5, y+0.5, z+0.5, x-0.5, y+0.5, z-0.5,  # left
+      x+0.5, y-0.5, z+0.5, x+0.5, y-0.5, z-0.5, 
+      x+0.5, y+0.5, z-0.5, x+0.5, y+0.5, z+0.5,  # right
+      x-0.5, y-0.5, z+0.5, x+0.5, y-0.5, z+0.5, 
+      x+0.5, y+0.5, z+0.5, x-0.5, y+0.5, z+0.5,  # front
+      x+0.5, y-0.5, z-0.5, x-0.5, y-0.5, z-0.5, 
+      x-0.5, y+0.5, z-0.5, x+0.5, y+0.5, z-0.5,  # back
     ]

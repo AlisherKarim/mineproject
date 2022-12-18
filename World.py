@@ -119,7 +119,7 @@ class World(object):
   def show_block(self, block : Block):
     if block not in self.shown:
       self.shown.add(block)
-    vertex_data = block.getVertices(0.5)
+    vertex_data = block.getVertices()
     texture_data = list(self.block_to_texture[block])
     self.block_to_vList[block] = self.batch.add(24, GL_QUADS, self.group,
                                               ('v3f/static', vertex_data),
